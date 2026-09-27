@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>Foolscap: edit PDFs entirely in your browser</title>
+<meta name="description" content="Merge, split, rotate, edit existing text, replace images, watermark and sign PDFs entirely in your browser. Nothing you open is ever uploaded anywhere." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📄</text></svg>" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Mono:wght@500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div id="drop-veil" class="drop-veil hidden">
+  <div class="drop-veil-inner">
+    <span class="drop-veil-glyph">📥</span>
+    <p>Drop your PDF or image to load it</p>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="masthead-left">
+    <button class="icon-only-btn drawer-toggle" id="btn-open-rail" title="Show pages" aria-label="Show pages">▤</button>
+    <span class="wordmark">Foolscap</span>
+    <span class="wordmark-rule" aria-hidden="true"></span>
+    <span class="tagline">a paper trail editor that never leaves your browser</span>
+  </div>
+  <div class="masthead-right">
+    <label class="file-btn primary">
+      Open file
+      <input type="file" id="input-open" accept="application/pdf,image/png,image/jpeg" hidden />
+    </label>
+    <label class="file-btn">
+      Add to merge
+      <input type="file" id="input-merge" accept="application/pdf" multiple hidden />
+    </label>
+    <button id="btn-download" class="file-btn accent" disabled>Download PDF</button>
+    <button class="icon-only-btn drawer-toggle" id="btn-open-panel" title="Show tool options" aria-label="Show tool options">◧</button>
+  </div>
+</header>
+
+<main class="workspace" id="workspace">
+
+  <div class="drawer-backdrop" id="drawer-backdrop"></div>
+
+  <aside class="rail" id="rail">
+    <div class="rail-head">
+      <h2>Pages</h2>
+      <span class="rail-count" id="page-count">0</span>
+      <button class="icon-only-btn rail-close" id="btn-close-rail" aria-label="Close">×</button>
+    </div>
+    <div class="rail-list" id="page-list">
+      <div class="rail-empty" id="rail-empty">
+        <p>No document open yet.</p>
+        <p class="rail-empty-sub">Open a PDF, or drop one anywhere on this page.</p>
+      </div>
+    </div>
+    <div class="rail-foot">
+      <button class="ghost-btn" id="btn-insert-blank">+ Blank page</button>
+      <button class="ghost-btn" id="btn-undo" title="Undo the last page change" disabled>Undo</button>
+      <button class="ghost-btn" id="btn-clear" title="Start over">Reset</button>
+    </div>
+  </aside>
+
+  <section class="stage" id="stage">
+    <div class="stage-empty" id="stage-empty">
+      <div class="stage-empty-card">
+        <span class="stage-empty-glyph">✒</span>
+        <h1>Open a PDF to begin marking it up</h1>
+        <p>Merge, split, reorder, rotate, watermark, sign, edit existing text and swap out images, all right here. Your file is read by this page only: it is never sent anywhere.</p>
+        <label class="file-btn primary large">
+          Choose a file
+          <input type="file" id="input-open-2" accept="application/pdf,image/png,image/jpeg" hidden />
+        </label>
+      </div>
+    </div>
+
+    <div class="stage-toolbar hidden" id="stage-toolbar">
+      <div class="tool-group" id="tool-group-page">
+        <button class="tool-btn active" data-tool="select" title="Select, drag and resize">Select</button>
+        <button class="tool-btn" data-tool="edit" title="Click existing text or images to change them">Edit</button>
+        <button class="tool-btn" data-tool="text" title="Click the page to add new text">Add text</button>
+        <button class="tool-btn" data-tool="image" title="Place an image or watermark">Image</button>
+        <button class="tool-btn" data-tool="sign" title="Draw a signature">Sign</button>
+      </div>
+      <div class="tool-group">
+        <button class="icon-btn" id="btn-rotate-left" title="Rotate selected pages left">⟲</button>
+        <button class="icon-btn" id="btn-rotate-right" title="Rotate selected pages right">⟳</button>
+        <button class="icon-btn danger" id="btn-delete-pages" title="Delete selected pages">Delete</button>
+      </div>
+      <div class="tool-group zoom-group">
+        <button class="icon-btn" id="btn-zoom-out" title="Zoom out">-</button>
+        <span class="zoom-value" id="zoom-value">100%</span>
+        <button class="icon-btn" id="btn-zoom-in" title="Zoom in">+</button>
+        <button class="text-btn small" id="btn-zoom-fit">Fit</button>
+      </div>
+      <div class="tool-group">
+        <button class="text-btn" id="btn-extract">Extract selection</button>
+        <button class="text-btn" id="btn-split">Split all pages</button>
+        <button class="text-btn" id="btn-extract-text">Extract text</button>
+        <button class="text-btn" id="btn-page-numbers">Page numbers…</button>
+      </div>
+    </div>
+
+    <div class="stage-canvas-wrap hidden" id="stage-canvas-wrap">
+      <div class="stage-canvas-scroll" id="stage-canvas-scroll">
+        <div class="page-frame" id="page-frame">
+          <canvas id="page-canvas"></canvas>
+          <div id="overlay-layer" class="overlay-layer"></div>
+        </div>
+      </div>
+      <p class="stage-hint" id="stage-hint">Select a page from the rail to view and mark it up.</p>
+    </div>
+  </section>
+
+  <aside class="panel" id="panel">
+    <div class="panel-head">
+      <h2>Tool options</h2>
+      <button class="icon-only-btn rail-close" id="btn-close-panel" aria-label="Close">×</button>
+    </div>
+
+    <div class="panel-empty" id="panel-empty">
+      <p>Pick Select to move and resize things you've placed.</p>
+    </div>
+
+    <div class="panel-section hidden" id="panel-edit">
+      <h3>Edit</h3>
+      <p class="panel-hint">Hover the page to see what can be changed. Click existing text to retype it in place, or click an existing image to swap it out.</p>
+      <p class="panel-hint"><strong>About font matching:</strong> if your new wording only reuses letters already present in that line, Foolscap re-embeds the document's own font so the replacement is pixel-identical. Otherwise it falls back to the closest matching standard typeface (same weight and slant) so nothing ever renders as a blank box.</p>
+    </div>
+
+    <div class="panel-section hidden" id="panel-text">
+      <h3>Add text</h3>
+      <label class="field-label">Content
+        <textarea id="text-input" rows="3" placeholder="Type here, then click the page"></textarea>
+      </label>
+      <label class="field-label">Family
+        <div class="segmented" id="text-family">
+          <button type="button" class="segmented-btn active" data-family="sans">Sans</button>
+          <button type="button" class="segmented-btn" data-family="serif">Serif</button>
+          <button type="button" class="segmented-btn" data-family="mono">Mono</button>
+        </div>
+      </label>
+      <label class="field-label">Style
+        <div class="segmented" id="text-style">
+          <button type="button" class="segmented-btn" data-style="bold" title="Bold"><b>B</b></button>
+          <button type="button" class="segmented-btn" data-style="italic" title="Italic"><i>I</i></button>
+        </div>
+      </label>
+      <label class="field-label">Size
+        <input type="range" id="text-size" min="8" max="96" value="24" />
+        <span class="field-value" id="text-size-value">24pt</span>
+      </label>
+      <label class="field-label">Colour
+        <input type="color" id="text-color" value="#16202a" />
+      </label>
+      <p class="panel-hint">Click anywhere on the page to drop this text. Drag a placed note to move it, or use its × to remove it.</p>
+    </div>
+
+    <div class="panel-section hidden" id="panel-image">
+      <h3>Image / watermark</h3>
+      <label class="file-btn full" for="image-input">Choose image</label>
+      <input type="file" id="image-input" accept="image/png,image/jpeg" hidden />
+      <div id="image-preview-wrap" class="image-preview-wrap hidden">
+        <img id="image-preview" alt="" />
+      </div>
+      <label class="field-label">Opacity
+        <input type="range" id="image-opacity" min="10" max="100" value="100" />
+        <span class="field-value" id="image-opacity-value">100%</span>
+      </label>
+      <label class="checkbox-label">
+        <input type="checkbox" id="image-all-pages" />
+        Stamp this on every page (watermark)
+      </label>
+      <p class="panel-hint">Click the page to place the image, then drag it or its corner handle to move and resize.</p>
+    </div>
+
+    <div class="panel-section hidden" id="panel-sign">
+      <h3>Signature</h3>
+      <canvas id="sign-pad" width="320" height="160"></canvas>
+      <div class="sign-pad-actions">
+        <button class="ghost-btn small" id="btn-sign-clear">Clear</button>
+        <button class="text-btn small" id="btn-sign-use">Use this signature</button>
+      </div>
+      <p class="panel-hint">Draw with your mouse or finger, then place it on the page like an image.</p>
+    </div>
+
+  </aside>
+</main>
+
+<div class="modal-veil hidden" id="modal-pagenumbers">
+  <div class="modal">
+    <h3>Add page numbers</h3>
+    <label class="field-label">Starting number
+      <input type="number" id="pn-start" value="1" min="0" />
+    </label>
+    <label class="field-label">Format
+      <select id="pn-format">
+        <option value="n">1, 2, 3…</option>
+        <option value="n-of-total">1 of N</option>
+        <option value="dash">- 1 -</option>
+      </select>
+    </label>
+    <label class="field-label">Position
+      <select id="pn-position">
+        <option value="bottom-center">Bottom centre</option>
+        <option value="bottom-right">Bottom right</option>
+        <option value="bottom-left">Bottom left</option>
+        <option value="top-right">Top right</option>
+      </select>
+    </label>
+    <div class="modal-actions">
+      <button class="ghost-btn" id="pn-cancel">Cancel</button>
+      <button class="text-btn" id="pn-apply">Apply to all pages</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer class="colophon">
+  <span>Foolscap: every operation runs locally, in this tab, using pdf-lib, pdf.js and fontkit.</span>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
