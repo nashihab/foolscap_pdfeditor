@@ -78,44 +78,6 @@ PDF fonts are usually embedded as subsets containing only the glyphs the documen
 
 > **A note on redaction.** The Redact tool draws a black box over content. That hides it visually but the underlying text can still exist in the file. For true removal, run **Compress, Maximum**, which flattens every page into an image and permanently discards anything hidden.
 
-## Quick start
-
-No Node, no npm, no build. It is plain HTML, CSS and JavaScript.
-
-```bash
-git clone https://github.com/<your-username>/<your-repo>.git
-cd <your-repo>
-python3 -m http.server 8000
-# open http://localhost:8000
-```
-
-## Deploying to GitHub Pages
-
-1. **Create a repository** on GitHub, for example `foolscap`.
-2. **Add the files** `index.html`, `styles.css`, `app.js`, `README.md` and `LICENSE` to the repository root (or to a `/docs` folder).
-3. **Commit and push:**
-   ```bash
-   git init
-   git add .
-   git commit -m "Add Foolscap"
-   git branch -M main
-   git remote add origin https://github.com/<your-username>/<your-repo>.git
-   git push -u origin main
-   ```
-4. **Enable Pages:** open the repository, go to **Settings, Pages**. Under **Build and deployment**, set **Source** to **Deploy from a branch**, choose `main` and the folder you used (root or `/docs`), then **Save**.
-5. **Wait about a minute.** GitHub shows your live address:
-   ```
-   https://<your-username>.github.io/<your-repo>/
-   ```
-   A repository named `<your-username>.github.io` is served at `https://<your-username>.github.io/` with no path.
-6. **Open it.** pdf.js, pdf-lib, fontkit, JSZip and the Inter font load from public CDNs over HTTPS, so there is nothing else to configure. Every push to the branch redeploys automatically.
-
-The CDN scripts are pinned to exact versions. If you would rather not depend on a CDN, download those four files into the repository and change the `<script>` tags in `index.html` to point at them. Remember to point `GlobalWorkerOptions.workerSrc` at the local pdf.js worker in `app.js` as well.
-
-## Custom domain
-
-In **Settings, Pages**, enter your domain under **Custom domain** and add the DNS records GitHub shows you: a `CNAME` pointing at `<your-username>.github.io` for a subdomain, or the listed `A` records for an apex domain. GitHub issues a free HTTPS certificate once DNS propagates.
-
 ## Keyboard shortcuts
 
 | Key | Action |
@@ -127,13 +89,6 @@ In **Settings, Pages**, enter your domain under **Custom domain** and add the DN
 | `+` and `-`, or `Ctrl` + scroll | Zoom |
 | `Delete` | Remove the selected item, or the selected pages |
 | `Esc` | Close dialogs and drawers |
-
-## Responsive design
-
-- **Desktop (wider than 1100 px):** three columns with the page rail, the canvas and the tool options side by side.
-- **Tablet (up to 1100 px):** the rail and options become slide in drawers behind a backdrop.
-- **Phone (up to 700 px):** the tools move into a thumb friendly dock at the bottom of the screen, the options open as a bottom sheet, buttons collapse to icons, and move and delete controls stay visible because there is no hover on touch screens.
-- Pointer events power every drag, resize and draw interaction, so mouse, touch and stylus all behave the same way. The layout respects safe areas on notched devices and honours `prefers-reduced-motion` and `prefers-color-scheme`.
 
 ## Project structure
 
