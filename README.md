@@ -7,7 +7,7 @@ Foolscap is three static files. Open them from any static host, including GitHub
 Every one of those operations happens on the visitor's own machine using [pdf.js](https://mozilla.github.io/pdf.js/) to read and render, [pdf-lib](https://pdf-lib.js.org/) and [fontkit](https://github.com/Hopding/fontkit) to write, and [JSZip](https://stuk.github.io/jszip/) for bulk exports. The PDF a visitor opens never leaves their device, which also happens to be the only sane way to run a PDF tool on a platform like GitHub Pages that can't run a server anyway.
 
 ---
-
+ 
 ## Contents
 
 - [Features](#features)
