@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Foolscap: edit, compress and sign PDFs in your browser</title>
+<meta name="description" content="Edit existing text, replace images, merge, split, compress, watermark and sign PDFs entirely in your browser. Nothing is ever uploaded." />
+<meta name="theme-color" content="#3D5AFE" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2722%22 fill=%22%233D5AFE%22/><text x=%2250%22 y=%2272%22 font-size=%2262%22 font-family=%22Arial%22 font-weight=%22700%22 text-anchor=%22middle%22 fill=%22white%22>F</text></svg>" />
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem("foolscap-theme");
+      if (!t) t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      document.documentElement.setAttribute("data-theme", t);
+    } catch (e) { document.documentElement.setAttribute("data-theme", "light"); }
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-select" viewBox="0 0 24 24"><path d="M5 3l14 8-6 2-2 6z"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></symbol>
+  <symbol id="i-text" viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></symbol>
+  <symbol id="i-shape" viewBox="0 0 24 24"><rect x="3" y="3" width="11" height="11" rx="1"/><circle cx="15.5" cy="15.5" r="5.5"/></symbol>
+  <symbol id="i-highlight" viewBox="0 0 24 24"><path d="M9 11l-6 6v3h9l3-3"/><path d="M22 12l-4.6 4.6a2 2 0 01-2.8 0l-5.2-5.2a2 2 0 010-2.8L14 4"/></symbol>
+  <symbol id="i-redact" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="1.5" style="fill:currentColor"/></symbol>
+  <symbol id="i-sign" viewBox="0 0 24 24"><path d="M2 17c2.5-5 4-9 6-9s1 7 3 7 3-5 5-5 2 3 6 3"/><path d="M2 21h20"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M3 7v6h6"/><path d="M3 13a9 9 0 103-7.7L3 8"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24"><path d="M21 7v6h-6"/><path d="M21 13a9 9 0 11-3-7.7L21 8"/></symbol>
+  <symbol id="i-rotl" viewBox="0 0 24 24"><path d="M1 4v6h6"/><path d="M3.5 15a9 9 0 102.1-9.4L1 10"/></symbol>
+  <symbol id="i-rotr" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M20.5 15a9 9 0 11-2.1-9.4L23 10"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></symbol>
+  <symbol id="i-pages" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="18" rx="1.5"/><rect x="14" y="3" width="7" height="8" rx="1.5"/><rect x="14" y="15" width="7" height="6" rx="1.5"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
+  <symbol id="i-compress" viewBox="0 0 24 24"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3" style="fill:currentColor"/><circle cx="12" cy="12" r="1.3" style="fill:currentColor"/><circle cx="19" cy="12" r="1.3" style="fill:currentColor"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 2l10 5-10 5L2 7z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
+  <symbol id="i-hash" viewBox="0 0 24 24"><path d="M4 9h16M4 15h16M10 3L8 21M16 3l-2 18"/></symbol>
+  <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 2.7l5.7 5.7a8 8 0 11-11.4 0z"/></symbol>
+  <symbol id="i-filetext" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></symbol>
+  <symbol id="i-chevl" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+  <symbol id="i-chevr" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></symbol>
+  <symbol id="i-scissors" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12"/></symbol>
+  <symbol id="i-selectall" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12l3 3 5-6"/></symbol>
+  <symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9z"/></symbol>
+</svg>
+
+<div id="busy-bar" class="busy-bar hidden"><span></span></div>
+
+<div id="drop-veil" class="drop-veil hidden">
+  <div class="drop-veil-inner">
+    <svg class="i i-xl"><use href="#i-upload"/></svg>
+    <p>Drop a PDF or image to open it</p>
+  </div>
+</div>
+
+<header class="appbar">
+  <div class="appbar-left">
+    <button class="btn-icon compact-only" id="btn-open-rail" title="Pages" aria-label="Pages"><svg class="i"><use href="#i-pages"/></svg></button>
+    <div class="brand"><span class="brand-mark">F</span><span class="brand-name">Foolscap</span></div>
+  </div>
+
+  <div class="appbar-center">
+    <span class="doc-name" id="doc-name">No document open</span>
+    <span class="doc-meta" id="doc-meta"></span>
+  </div>
+
+  <div class="appbar-right">
+    <button class="btn-icon" id="btn-undo" title="Undo (Ctrl+Z)" aria-label="Undo" disabled><svg class="i"><use href="#i-undo"/></svg></button>
+    <button class="btn-icon" id="btn-redo" title="Redo (Ctrl+Y)" aria-label="Redo" disabled><svg class="i"><use href="#i-redo"/></svg></button>
+    <button class="btn-icon" id="btn-theme" title="Toggle light and dark" aria-label="Toggle theme"><svg class="i"><use id="theme-use" href="#i-moon"/></svg></button>
+    <label class="btn btn-secondary hide-phone" title="Open a PDF or image">
+      <svg class="i"><use href="#i-upload"/></svg><span>Open</span>
+      <input type="file" id="input-open" accept="application/pdf,image/png,image/jpeg" hidden />
+    </label>
+    <button class="btn btn-secondary" id="btn-compress" disabled title="Reduce file size"><svg class="i"><use href="#i-compress"/></svg><span class="hide-phone">Compress</span></button>
+    <button class="btn btn-primary" id="btn-download" disabled title="Download (Ctrl+S)"><svg class="i"><use href="#i-download"/></svg><span>Download</span></button>
+    <button class="btn-icon compact-only" id="btn-open-panel" title="Tool options" aria-label="Tool options"><svg class="i"><use href="#i-sliders"/></svg></button>
+  </div>
+</header>
+
+<main class="workspace" id="workspace">
+  <div class="drawer-backdrop" id="drawer-backdrop"></div>
+
+  <aside class="rail" id="rail" aria-label="Pages">
+    <div class="rail-head">
+      <h2>Pages</h2>
+      <span class="count-pill" id="page-count">0</span>
+      <span class="grow"></span>
+      <button class="btn-icon small" id="btn-select-all" title="Select all pages" aria-label="Select all pages"><svg class="i"><use href="#i-selectall"/></svg></button>
+      <button class="btn-icon small compact-only" id="btn-close-rail" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="rail-list" id="page-list">
+      <div class="rail-empty" id="rail-empty">
+        <p>No pages yet.</p>
+        <p class="faint">Open a PDF to see its pages here.</p>
+      </div>
+    </div>
+    <div class="rail-foot">
+      <label class="btn btn-secondary btn-block" title="Merge more PDFs into this document">
+        <svg class="i"><use href="#i-layers"/></svg><span>Add PDFs</span>
+        <input type="file" id="input-merge" accept="application/pdf" multiple hidden />
+      </label>
+      <div class="rail-foot-row">
+        <button class="btn btn-ghost" id="btn-insert-blank"><svg class="i"><use href="#i-plus"/></svg><span>Blank</span></button>
+        <button class="btn btn-ghost" id="btn-duplicate"><svg class="i"><use href="#i-copy"/></svg><span>Duplicate</span></button>
+        <button class="btn btn-ghost danger-text" id="btn-clear">Reset</button>
+      </div>
+    </div>
+  </aside>
+
+  <section class="stage" id="stage">
+    <div class="stage-empty" id="stage-empty">
+      <div class="hero">
+        <div class="hero-mark"><svg class="i i-xl"><use href="#i-filetext"/></svg></div>
+        <h1>Everything you need to work on a PDF, privately.</h1>
+        <p>Edit existing text, replace images, merge, split, compress, watermark and sign. It all runs inside this tab, so your files are never uploaded.</p>
+        <label class="btn btn-primary btn-lg">
+          <svg class="i"><use href="#i-upload"/></svg><span>Choose a file</span>
+          <input type="file" id="input-open-2" accept="application/pdf,image/png,image/jpeg" hidden />
+        </label>
+        <p class="faint small-text">or drag and drop a PDF anywhere on this page</p>
+        <ul class="hero-points">
+          <li><svg class="i"><use href="#i-check"/></svg>No upload, no account</li>
+          <li><svg class="i"><use href="#i-check"/></svg>Edit real text and images</li>
+          <li><svg class="i"><use href="#i-check"/></svg>Smart compression</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="stage-ui hidden" id="stage-ui">
+      <div class="stage-bar">
+        <div class="dock" id="dock" role="toolbar" aria-label="Tools">
+          <button class="dock-btn active" data-tool="select" title="Select and move (V)"><svg class="i"><use href="#i-select"/></svg><span>Select</span></button>
+          <button class="dock-btn" data-tool="edit" title="Edit existing text and images (E)"><svg class="i"><use href="#i-edit"/></svg><span>Edit</span></button>
+          <button class="dock-btn" data-tool="text" title="Add text (T)"><svg class="i"><use href="#i-text"/></svg><span>Text</span></button>
+          <button class="dock-btn" data-tool="image" title="Add image or watermark (I)"><svg class="i"><use href="#i-image"/></svg><span>Image</span></button>
+          <button class="dock-btn" data-tool="shape" title="Shapes and lines (U)"><svg class="i"><use href="#i-shape"/></svg><span>Shape</span></button>
+          <button class="dock-btn" data-tool="highlight" title="Highlight (H)"><svg class="i"><use href="#i-highlight"/></svg><span>Highlight</span></button>
+          <button class="dock-btn" data-tool="redact" title="Cover with a black box (X)"><svg class="i"><use href="#i-redact"/></svg><span>Redact</span></button>
+          <button class="dock-btn" data-tool="sign" title="Draw a signature (G)"><svg class="i"><use href="#i-sign"/></svg><span>Sign</span></button>
+        </div>
+
+        <div class="actions" id="actions">
+          <button class="btn-icon" id="btn-rotate-left" title="Rotate left" aria-label="Rotate left"><svg class="i"><use href="#i-rotl"/></svg></button>
+          <button class="btn-icon" id="btn-rotate-right" title="Rotate right" aria-label="Rotate right"><svg class="i"><use href="#i-rotr"/></svg></button>
+          <button class="btn-icon danger-hover" id="btn-delete-pages" title="Delete page (Delete)" aria-label="Delete page"><svg class="i"><use href="#i-trash"/></svg></button>
+          <span class="vr"></span>
+          <button class="btn-icon" id="btn-zoom-out" title="Zoom out" aria-label="Zoom out"><svg class="i"><use href="#i-minus"/></svg></button>
+          <button class="zoom-chip" id="btn-zoom-fit" title="Reset zoom"><span id="zoom-value">100%</span></button>
+          <button class="btn-icon" id="btn-zoom-in" title="Zoom in" aria-label="Zoom in"><svg class="i"><use href="#i-plus"/></svg></button>
+          <span class="vr"></span>
+          <div class="menu-wrap">
+            <button class="btn btn-secondary" id="btn-more" aria-haspopup="true" aria-expanded="false"><svg class="i"><use href="#i-more"/></svg><span class="hide-phone">More</span></button>
+            <div class="menu hidden" id="menu-more" role="menu">
+              <button role="menuitem" data-action="extract"><svg class="i"><use href="#i-copy"/></svg>Extract selected pages</button>
+              <button role="menuitem" data-action="split"><svg class="i"><use href="#i-scissors"/></svg>Split into single pages (ZIP)</button>
+              <button role="menuitem" data-action="images"><svg class="i"><use href="#i-image"/></svg>Export pages as PNG (ZIP)</button>
+              <button role="menuitem" data-action="text"><svg class="i"><use href="#i-filetext"/></svg>Extract all text</button>
+              <hr />
+              <button role="menuitem" data-action="numbers"><svg class="i"><use href="#i-hash"/></svg>Page numbers</button>
+              <button role="menuitem" data-action="watermark"><svg class="i"><use href="#i-drop"/></svg>Text watermark</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="canvas-wrap">
+        <div class="canvas-scroll" id="canvas-scroll">
+          <div class="page-frame" id="page-frame">
+            <canvas id="page-canvas"></canvas>
+            <div id="overlay-layer" class="overlay-layer"></div>
+          </div>
+        </div>
+        <div class="pager">
+          <button class="btn-icon small" id="btn-prev" aria-label="Previous page"><svg class="i"><use href="#i-chevl"/></svg></button>
+          <span id="stage-hint" class="pager-text">Page 1 of 1</span>
+          <button class="btn-icon small" id="btn-next" aria-label="Next page"><svg class="i"><use href="#i-chevr"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="panel" id="panel" aria-label="Tool options">
+    <div class="panel-head">
+      <h2 id="panel-title">Select</h2>
+      <button class="btn-icon small compact-only" id="btn-close-panel" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button>
+    </div>
+
+    <div class="panel-section" id="panel-select">
+      <p class="hint">Drag anything you have placed to move it. Pick a tool above to add or change content.</p>
+      <div class="shortcut-list">
+        <div><kbd>V</kbd><span>Select</span></div>
+        <div><kbd>E</kbd><span>Edit existing</span></div>
+        <div><kbd>T</kbd><span>Text</span></div>
+        <div><kbd>U</kbd><span>Shape</span></div>
+        <div><kbd>H</kbd><span>Highlight</span></div>
+        <div><kbd>Ctrl</kbd><kbd>Z</kbd><span>Undo</span></div>
+        <div><kbd>Ctrl</kbd><kbd>S</kbd><span>Download</span></div>
+        <div><kbd>[</kbd><kbd>]</kbd><span>Prev / next page</span></div>
+      </div>
+    </div>
+
+    <div class="panel-section hidden" id="panel-edit">
+      <p class="hint">Hover the page to see what can be changed. Click a line of text to retype it in place, or click an image to swap it for another.</p>
+      <div class="note">
+        <strong>About font matching</strong>
+        <p>If your new wording only reuses letters already in that line, the document's own font is re-embedded for a perfect match. Otherwise the closest standard typeface (same weight and slant) is used, so nothing ever renders as a blank box.</p>
+      </div>
+    </div>
+
+    <div class="panel-section hidden" id="panel-text">
+      <label class="field"><span>Content</span>
+        <textarea id="text-input" rows="3" placeholder="Type here, then click the page"></textarea>
+      </label>
+      <div class="field"><span>Family</span>
+        <div class="segmented" id="text-family">
+          <button type="button" class="seg active" data-family="sans">Sans</button>
+          <button type="button" class="seg" data-family="serif">Serif</button>
+          <button type="button" class="seg" data-family="mono">Mono</button>
+        </div>
+      </div>
+      <div class="field"><span>Style</span>
+        <div class="segmented" id="text-style">
+          <button type="button" class="seg" data-style="bold"><b>B</b></button>
+          <button type="button" class="seg" data-style="italic"><i>I</i></button>
+        </div>
+      </div>
+      <label class="field"><span>Size <em id="text-size-value">24 pt</em></span>
+        <input type="range" id="text-size" min="6" max="120" value="24" />
+      </label>
+      <label class="field inline"><span>Colour</span>
+        <input type="color" id="text-color" value="#111827" />
+      </label>
+      <p class="hint">Click the page to place it. Bengali, Arabic, emoji and other scripts are supported.</p>
+    </div>
+
+    <div class="panel-section hidden" id="panel-image">
+      <label class="btn btn-secondary btn-block" for="image-input"><svg class="i"><use href="#i-upload"/></svg><span>Choose image</span></label>
+      <input type="file" id="image-input" accept="image/png,image/jpeg" hidden />
+      <div id="image-preview-wrap" class="image-preview hidden"><img id="image-preview" alt="" /></div>
+      <label class="field"><span>Opacity <em id="image-opacity-value">100%</em></span>
+        <input type="range" id="image-opacity" min="10" max="100" value="100" />
+      </label>
+      <label class="check"><input type="checkbox" id="image-all-pages" /><span>Stamp on every page</span></label>
+      <p class="hint">Click the page to place it, then drag it or use the corner handle to resize.</p>
+    </div>
+
+    <div class="panel-section hidden" id="panel-shape">
+      <div class="field"><span>Shape</span>
+        <div class="segmented" id="shape-kind">
+          <button type="button" class="seg active" data-shape="rect">Box</button>
+          <button type="button" class="seg" data-shape="ellipse">Oval</button>
+          <button type="button" class="seg" data-shape="line">Line</button>
+        </div>
+      </div>
+      <label class="field inline"><span>Outline</span><input type="color" id="shape-stroke" value="#E5484D" /></label>
+      <label class="field"><span>Thickness <em id="shape-width-value">2 pt</em></span>
+        <input type="range" id="shape-width" min="1" max="16" value="2" />
+      </label>
+      <label class="check"><input type="checkbox" id="shape-fill-on" /><span>Fill</span></label>
+      <label class="field inline"><span>Fill colour</span><input type="color" id="shape-fill" value="#FFE066" /></label>
+      <label class="field"><span>Fill opacity <em id="shape-opacity-value">40%</em></span>
+        <input type="range" id="shape-opacity" min="5" max="100" value="40" />
+      </label>
+      <p class="hint">Click and drag on the page to draw.</p>
+    </div>
+
+    <div class="panel-section hidden" id="panel-highlight">
+      <div class="field"><span>Colour</span>
+        <div class="swatches" id="hl-swatches">
+          <button type="button" class="swatch active" data-color="#FFE066" style="--c:#FFE066" aria-label="Yellow"></button>
+          <button type="button" class="swatch" data-color="#8CE99A" style="--c:#8CE99A" aria-label="Green"></button>
+          <button type="button" class="swatch" data-color="#FFA8D1" style="--c:#FFA8D1" aria-label="Pink"></button>
+          <button type="button" class="swatch" data-color="#74C0FC" style="--c:#74C0FC" aria-label="Blue"></button>
+          <button type="button" class="swatch" data-color="#FFB366" style="--c:#FFB366" aria-label="Orange"></button>
+        </div>
+      </div>
+      <label class="field"><span>Strength <em id="hl-opacity-value">45%</em></span>
+        <input type="range" id="hl-opacity" min="15" max="90" value="45" />
+      </label>
+      <p class="hint">Click and drag across the text you want to highlight.</p>
+    </div>
+
+    <div class="panel-section hidden" id="panel-redact">
+      <p class="hint">Click and drag to cover an area with a solid black box.</p>
+      <div class="note warn">
+        <strong>Important</strong>
+        <p>A black box hides content visually, but the text underneath can still exist in the file. For true removal, use <b>Compress</b> then choose <b>Maximum</b> to flatten every page into an image.</p>
+      </div>
+    </div>
+
+    <div class="panel-section hidden" id="panel-sign">
+      <canvas id="sign-pad" width="640" height="280"></canvas>
+      <div class="field inline"><span>Ink</span>
+        <div class="swatches" id="sign-inks">
+          <button type="button" class="swatch active" data-color="#111827" style="--c:#111827" aria-label="Black"></button>
+          <button type="button" class="swatch" data-color="#1D4ED8" style="--c:#1D4ED8" aria-label="Blue"></button>
+          <button type="button" class="swatch" data-color="#B91C1C" style="--c:#B91C1C" aria-label="Red"></button>
+        </div>
+      </div>
+      <div class="row-actions">
+        <button class="btn btn-ghost" id="btn-sign-clear">Clear</button>
+        <button class="btn btn-primary" id="btn-sign-use">Use signature</button>
+      </div>
+      <p class="hint">Draw with a mouse, finger or stylus, then place it on the page like an image.</p>
+    </div>
+  </aside>
+</main>
+
+<!-- Page numbers -->
+<div class="modal-veil hidden" id="modal-numbers">
+  <div class="modal">
+    <div class="modal-head"><h3>Page numbers</h3><button class="btn-icon small" data-close aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+    <label class="field"><span>Start at</span><input type="number" id="pn-start" value="1" min="0" /></label>
+    <label class="field"><span>Format</span>
+      <select id="pn-format">
+        <option value="n">1, 2, 3</option>
+        <option value="n-of-total">1 of N</option>
+        <option value="dash">- 1 -</option>
+        <option value="page">Page 1</option>
+      </select>
+    </label>
+    <label class="field"><span>Position</span>
+      <select id="pn-position">
+        <option value="bottom-center">Bottom centre</option>
+        <option value="bottom-right">Bottom right</option>
+        <option value="bottom-left">Bottom left</option>
+        <option value="top-center">Top centre</option>
+        <option value="top-right">Top right</option>
+      </select>
+    </label>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close>Cancel</button>
+      <button class="btn btn-primary" id="pn-apply">Apply to all pages</button>
+    </div>
+  </div>
+</div>
+
+<!-- Watermark -->
+<div class="modal-veil hidden" id="modal-watermark">
+  <div class="modal">
+    <div class="modal-head"><h3>Text watermark</h3><button class="btn-icon small" data-close aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+    <label class="field"><span>Text</span><input type="text" id="wm-text" value="CONFIDENTIAL" /></label>
+    <label class="field"><span>Size <em id="wm-size-value">72 pt</em></span><input type="range" id="wm-size" min="16" max="200" value="72" /></label>
+    <label class="field"><span>Angle <em id="wm-angle-value">45°</em></span><input type="range" id="wm-angle" min="0" max="90" value="45" /></label>
+    <label class="field"><span>Opacity <em id="wm-opacity-value">15%</em></span><input type="range" id="wm-opacity" min="5" max="80" value="15" /></label>
+    <label class="field inline"><span>Colour</span><input type="color" id="wm-color" value="#6B7280" /></label>
+    <div class="modal-actions">
+      <button class="btn btn-ghost danger-text" id="wm-remove">Remove</button>
+      <span class="grow"></span>
+      <button class="btn btn-ghost" data-close>Cancel</button>
+      <button class="btn btn-primary" id="wm-apply">Apply to all pages</button>
+    </div>
+  </div>
+</div>
+
+<!-- Compress -->
+<div class="modal-veil hidden" id="modal-compress">
+  <div class="modal modal-wide">
+    <div class="modal-head"><h3>Compress PDF</h3><button class="btn-icon small" data-close aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+
+    <div class="size-row">
+      <div><span class="size-label">Current size</span><strong id="size-current">Calculating…</strong></div>
+      <div class="size-arrow"><svg class="i"><use href="#i-chevr"/></svg></div>
+      <div><span class="size-label">After compression</span><strong id="size-after">Not run yet</strong></div>
+    </div>
+
+    <div class="levels" id="levels" role="radiogroup" aria-label="Compression level">
+      <label class="level">
+        <input type="radio" name="clevel" value="optimize" />
+        <span class="level-body">
+          <span class="level-title">Light <em>no quality loss</em></span>
+          <span class="level-desc">Rebuilds the file structure. Text, vectors and images stay untouched. Usually a small saving.</span>
+        </span>
+      </label>
+      <label class="level">
+        <input type="radio" name="clevel" value="smart" checked />
+        <span class="level-body">
+          <span class="level-title">Balanced <em>recommended</em></span>
+          <span class="level-desc">Recompresses and resizes embedded images. Text stays sharp, searchable and selectable.</span>
+        </span>
+      </label>
+      <label class="level">
+        <input type="radio" name="clevel" value="max" />
+        <span class="level-body">
+          <span class="level-title">Maximum <em>flatten pages</em></span>
+          <span class="level-desc">Turns every page into an image. Smallest files, best for scans. Also permanently removes hidden content.</span>
+        </span>
+      </label>
+    </div>
+
+    <div class="opt-group" id="opts-smart">
+      <label class="field"><span>Image quality <em id="cq-value">60%</em></span><input type="range" id="cq" min="25" max="92" value="60" /></label>
+      <label class="field"><span>Largest image side</span>
+        <select id="cmax">
+          <option value="0">Keep original size</option>
+          <option value="2400">2400 px</option>
+          <option value="1600" selected>1600 px</option>
+          <option value="1200">1200 px</option>
+          <option value="800">800 px</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="opt-group hidden" id="opts-max">
+      <label class="field"><span>Resolution</span>
+        <select id="cdpi">
+          <option value="72">72 dpi (smallest)</option>
+          <option value="100">100 dpi</option>
+          <option value="150" selected>150 dpi (good for reading)</option>
+          <option value="200">200 dpi (print quality)</option>
+        </select>
+      </label>
+      <label class="field"><span>Image quality <em id="cq2-value">60%</em></span><input type="range" id="cq2" min="25" max="92" value="60" /></label>
+      <label class="check"><input type="checkbox" id="ckeep" checked /><span>Keep text searchable (invisible text layer)</span></label>
+    </div>
+
+    <div class="progress hidden" id="cprogress"><div class="progress-bar"><span id="cbar"></span></div><span id="cstatus">Working…</span></div>
+    <div class="result hidden" id="cresult"></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close>Close</button>
+      <button class="btn btn-secondary hidden" id="c-download">Download compressed</button>
+      <button class="btn btn-primary" id="c-run"><svg class="i"><use href="#i-zap"/></svg><span>Compress</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
