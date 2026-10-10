@@ -116,7 +116,3 @@ There is deliberately no framework and no bundler, so the whole thing can be rea
 - **Replaced images on pages you have rotated** are positioned correctly in the saved file, but the on screen preview of that one case can look offset. Rotate pages first, then edit, or replace images before rotating.
 - **Balanced compression** skips image formats it cannot re-encode safely (see above). Use Maximum for those.
 - Very long documents render thumbnails lazily as you scroll, but compressing or flattening hundreds of pages will take a while because it all happens in your browser.
-
-## License
-
-MIT. Use it, change it and ship it, including in commercial projects.
